@@ -71,6 +71,7 @@ import (
 	"github.com/cilium/cilium/pkg/maps/ctmap"
 	ipcachemap "github.com/cilium/cilium/pkg/maps/ipcache"
 	"github.com/cilium/cilium/pkg/maps/lbmap"
+	"github.com/cilium/cilium/pkg/maps/localredirect"
 	"github.com/cilium/cilium/pkg/maps/policymap"
 	"github.com/cilium/cilium/pkg/metrics"
 	monitoragent "github.com/cilium/cilium/pkg/monitor/agent"
@@ -276,6 +277,12 @@ func (d *Daemon) init() error {
 
 	if err := os.Chdir(option.Config.StateDir); err != nil {
 		log.WithError(err).WithField(logfields.Path, option.Config.StateDir).Fatal("Could not change to runtime directory")
+	}
+
+	if err := localredirect.LocalRedirectMap.OpenOrCreate(); err != nil {
+		log.WithError(err).Fatal("Failed to access LocalRedirectMap")
+	} else {
+		log.Info("Successfully opened LocalRedirectMap")
 	}
 
 	if !option.Config.DryMode {
