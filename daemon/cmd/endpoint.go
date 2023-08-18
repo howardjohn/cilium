@@ -435,7 +435,7 @@ func (d *Daemon) createEndpoint(ctx context.Context, owner regeneration.Owner, e
 			switch identityLabels["redir-type"].Value {
 			case "workload":
 				localAddress := byteorder.Native.Uint32(ep.IPv4.AsSlice())
-				log.WithField("redir-type", "workload").Info("found redir-workload with address %s(%d)", ep.IPv4Address(), localAddress)
+				log.WithField("redir-type", "workload").Infof("found redir-workload with address %s(%d)", ep.IPv4Address(), localAddress)
 				var epMac types.MACAddr
 				for i, b := range ep.LXCMac() {
 					epMac[i] = b
@@ -445,7 +445,7 @@ func (d *Daemon) createEndpoint(ctx context.Context, owner regeneration.Owner, e
 					&localredirect.LocalRedirectInfo{IfIndex: uint16(ep.GetIfIndex()), IfMac: epMac},
 				)
 			case "proxy":
-				log.WithField("redir-type", "proxy").Info("found redir-proxy")
+				log.WithField("redir-type", "proxy").Infof("found redir-proxy")
 				var epMac types.MACAddr
 				for i, b := range ep.LXCMac() {
 					epMac[i] = b

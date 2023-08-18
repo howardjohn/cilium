@@ -1754,7 +1754,7 @@ func (e *Endpoint) UpdateLabels(ctx context.Context, identityLabels, infoLabels 
 	switch identityLabels["redir-type"].Value {
 	case "workload":
 		localAddress := byteorder.Native.Uint32(e.IPv4.AsSlice())
-		log.WithField("redir-type", "workload").Info("updating redir-workload with address %s(%d)", e.IPv4Address(), localAddress)
+		log.WithField("redir-type", "workload").Infof("updating redir-workload with address %s(%d)", e.IPv4Address(), localAddress)
 		var epMac types.MACAddr
 		for i, b := range e.LXCMac() {
 			epMac[i] = b
@@ -1765,7 +1765,7 @@ func (e *Endpoint) UpdateLabels(ctx context.Context, identityLabels, infoLabels 
 		)
 
 	case "proxy":
-		log.WithField("redir-type", "proxy").Info("updating redir-proxy with interface %d", e.GetIfIndex())
+		log.WithField("redir-type", "proxy").Infof("updating redir-proxy with interface %d", e.GetIfIndex())
 		var epMac types.MACAddr
 		for i, b := range e.LXCMac() {
 			epMac[i] = b

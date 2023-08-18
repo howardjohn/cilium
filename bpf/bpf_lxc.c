@@ -1293,21 +1293,30 @@ static __always_inline int __tail_handle_ipv4(struct __ctx_buff *ctx,
 	if (ip4->protocol == IPPROTO_TCP) {
 		struct local_redirect_key redirect_key;
 		struct local_redirect_info *redirect_value;
+		__u32 ipv4;
+		ipv4 = LXC_IPV4;
 		redirect_key.id = LXC_IPV4;
 		redirect_value = map_lookup_elem(&LOCAL_REDIRECT_MAP, &redirect_key);
+		printk("handle ipv4, lookup %pI4 %x: %d", &ipv4, LXC_IPV4, redirect_value != 0);
 		if (redirect_value) {
 			redirect_key.id = 42;
+		  printk("match 1 ipv4, lookup %pI4", &ipv4);
 			redirect_value = map_lookup_elem(&LOCAL_REDIRECT_MAP, &redirect_key);
 			if (redirect_value) {
 				union macaddr destmac;
+		    printk("match 2 ipv4, lookup %pI4", &ipv4);
 				// apparently sizeof(destmac) evaluates to 8 instead of 6 for some reason,
 				// and the verifier kicks us out. Just fix the size at 6.
 				memcpy(&destmac.addr, redirect_value->ifmac, 6);
 				/* Rewrite to destination MAC */
-				if (eth_store_daddr(ctx, (__u8 *) &destmac.addr, 0) < 0)
+				if (eth_store_daddr(ctx, (__u8 *) &destmac.addr, 0) < 0) {
+		      printk("match drop redirect ipv4, lookup %pI4", &ipv4);
 					return send_drop_notify_error(ctx, SECLABEL, DROP_WRITE_ERROR, CTX_ACT_OK, METRIC_EGRESS);
+				}
+		    printk("match 3 redirect ipv4, lookup %pI4 to %d", &ipv4, redirect_value->ifindex);
 				return ctx_redirect(ctx, redirect_value->ifindex, 0);
 			} else {
+        printk("match drop SIP, lookup %pI4", &ipv4);
 				return DROP_INVALID_SIP;
 			}
 		}
