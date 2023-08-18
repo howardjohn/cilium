@@ -1297,26 +1297,26 @@ static __always_inline int __tail_handle_ipv4(struct __ctx_buff *ctx,
 		ipv4 = LXC_IPV4;
 		redirect_key.id = LXC_IPV4;
 		redirect_value = map_lookup_elem(&LOCAL_REDIRECT_MAP, &redirect_key);
-		printk("handle ipv4, lookup %pI4 %x: %d", &ipv4, LXC_IPV4, redirect_value != 0);
+		printk("handle lxc, lookup %pI4 %x: %d", &ipv4, LXC_IPV4, redirect_value != 0);
 		if (redirect_value) {
 			redirect_key.id = 42;
-		  printk("match 1 ipv4, lookup %pI4", &ipv4);
+		  printk("match 1 lxc, lookup %pI4", &ipv4);
 			redirect_value = map_lookup_elem(&LOCAL_REDIRECT_MAP, &redirect_key);
 			if (redirect_value) {
 				union macaddr destmac;
-		    printk("match 2 ipv4, lookup %pI4", &ipv4);
+		    printk("match 2 lxc, lookup %pI4", &ipv4);
 				// apparently sizeof(destmac) evaluates to 8 instead of 6 for some reason,
 				// and the verifier kicks us out. Just fix the size at 6.
 				memcpy(&destmac.addr, redirect_value->ifmac, 6);
 				/* Rewrite to destination MAC */
 				if (eth_store_daddr(ctx, (__u8 *) &destmac.addr, 0) < 0) {
-		      printk("match drop redirect ipv4, lookup %pI4", &ipv4);
+		      printk("match drop redirect lxc, lookup %pI4", &ipv4);
 					return send_drop_notify_error(ctx, SECLABEL, DROP_WRITE_ERROR, CTX_ACT_OK, METRIC_EGRESS);
 				}
-		    printk("match 3 redirect ipv4, lookup %pI4 to %d", &ipv4, redirect_value->ifindex);
+		    printk("match 3 redirect lxc, lookup %pI4 to %d", &ipv4, redirect_value->ifindex);
 				return ctx_redirect(ctx, redirect_value->ifindex, 0);
 			} else {
-        printk("match drop SIP, lookup %pI4", &ipv4);
+        printk("match lxc drop SIP, lookup %pI4", &ipv4);
 				return DROP_INVALID_SIP;
 			}
 		}
@@ -1390,6 +1390,7 @@ int cil_from_container(struct __ctx_buff *ctx)
 	__u16 proto;
 	int ret;
 
+  printk("cil_from_container %d-%d, %pI4", ctx->ifindex, ctx->ingress_ifindex, &ctx->local_ip4);
 	bpf_clear_meta(ctx);
 	reset_queue_mapping(ctx);
 
@@ -2193,6 +2194,7 @@ int cil_to_container(struct __ctx_buff *ctx)
 	__u16 proto;
 	int ret;
 
+  printk("cil_to_container %d->%d, %pI4", ctx->ifindex, ctx->ingress_ifindex, &ctx->local_ip4);
 	if (!validate_ethertype(ctx, &proto)) {
 		ret = DROP_UNSUPPORTED_L2;
 		goto out;
