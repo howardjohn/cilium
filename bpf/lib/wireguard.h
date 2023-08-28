@@ -11,6 +11,8 @@
 
 #include "tailcall.h"
 #include "common.h"
+#include "lib/proxy.h"
+#include "lib/proxy_hairpin.h"
 #include "overloadable.h"
 
 static __always_inline int
@@ -95,8 +97,18 @@ wg_maybe_redirect_to_encrypt(struct __ctx_buff *ctx)
 	/* Redirect to the WireGuard tunnel device if the encryption is
 	 * required.
 	 */
-	if (dst && dst->key)
-		return ctx_redirect(ctx, WG_IFINDEX, 0);
+//#ifdef ENABLE_IPV4
+//	if (dst && dst->key) {
+//	    printk("wireguard hit %d", HBONE_IFINDEX);
+//		printk("dst %pI4, src %pI4", &ip4->daddr, &ip4->saddr);
+//		ret = ctx_redirect(ctx, HBONE_IFINDEX, 0);
+//	    printk("wireguard ret %d", ret);
+//		return ret;
+//        ctx_store_meta(ctx, CB_PROXY_MAGIC, 0);
+//        return ctx_redirect_to_proxy_hairpin_ipv4(ctx, 15008);
+//        return ctx_redirect_to_proxy_first(ctx, 15008);
+//#endif
+//    }
 
 out:
 	return CTX_ACT_OK;

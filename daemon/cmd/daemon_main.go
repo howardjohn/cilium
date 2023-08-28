@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/cilium/cilium/pkg/hbone"
 	"net"
 	"os"
 	"path"
@@ -1587,6 +1588,7 @@ type daemonParams struct {
 	Clientset         k8sClient.Clientset
 	Datapath          datapath.Datapath
 	WGAgent           *wireguard.Agent `optional:"true"`
+	HBONEAgent        *hbone.Agent     `optional:"true"`
 	LocalNodeStore    node.LocalNodeStore
 	BGPController     *bgpv1.Controller
 	Shutdowner        hive.Shutdowner
@@ -1628,6 +1630,7 @@ func newDaemonPromise(params daemonParams) promise.Promise[*Daemon] {
 				params.NodeManager,
 				params.Datapath,
 				params.WGAgent,
+				params.HBONEAgent,
 				params.Clientset,
 				params.SharedResources,
 				params.CertManager,
@@ -1641,8 +1644,10 @@ func newDaemonPromise(params daemonParams) promise.Promise[*Daemon] {
 				params.PolicyUpdater,
 			)
 			if err != nil {
+				log.Errorf("daemon creation failed: %v", err)
 				return fmt.Errorf("daemon creation failed: %w", err)
 			}
+			log.Errorf("daemon creation success: %v", err)
 			daemon = d
 
 			daemonResolver.Resolve(daemon)

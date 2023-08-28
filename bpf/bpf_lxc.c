@@ -71,6 +71,8 @@
 # define ENABLE_PER_PACKET_LB 1
 #endif
 
+# define HBONE_IFINDEX	43
+
 #ifdef ENABLE_PER_PACKET_LB
 
 #ifdef ENABLE_IPV4
@@ -1272,6 +1274,9 @@ static __always_inline int __tail_handle_ipv4(struct __ctx_buff *ctx)
 	if (ipv4_is_fragment(ip4))
 		return DROP_FRAG_NOSUPPORT;
 #endif
+    if (ip4->protocol == IPPROTO_TCP) {
+        return ctx_redirect(ctx, HBONE_IFINDEX, 0);
+    }
 
 	if (unlikely(!is_valid_lxc_src_ipv4(ip4)))
 		return DROP_INVALID_SIP;

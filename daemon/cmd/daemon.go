@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cilium/cilium/pkg/hbone"
 	"math/big"
 	"net"
 	"net/netip"
@@ -404,6 +405,7 @@ func newDaemon(ctx context.Context, cleaner *daemonCleanup,
 	nodeMngr nodeManager.NodeManager,
 	dp datapath.Datapath,
 	wgAgent *wg.Agent,
+	hboneAgent *hbone.Agent,
 	clientset k8sClient.Clientset,
 	sharedResources k8s.SharedResources,
 	certManager certificatemanager.CertificateManager,
@@ -943,6 +945,15 @@ func newDaemon(ctx context.Context, cleaner *daemonCleanup,
 			log.WithError(err).Error("failed to initialize wireguard agent")
 			return nil, nil, fmt.Errorf("failed to initialize wireguard agent: %w", err)
 		}
+	}
+	log.Infof("howardjohn: starting")
+	if hboneAgent != nil {
+		log.Infof("howardjohn: starting HBONE agent")
+		if err := hboneAgent.Init(d.ipcache, d.mtuConfig); err != nil {
+			log.WithError(err).Error("failed to initialize hbone agent")
+			return nil, nil, fmt.Errorf("failed to initialize hbone agent: %w", err)
+		}
+		log.Infof("howardjohn: started HBONE agent")
 	}
 
 	// Perform an early probe on the underlying kernel on whether BandwidthManager

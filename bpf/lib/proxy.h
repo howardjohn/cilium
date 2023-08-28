@@ -306,6 +306,7 @@ ctx_redirect_to_proxy_first(struct __ctx_buff *ctx, __be16 proxy_port)
 #ifdef ENABLE_IPV6
 	union v6addr ipv6_localhost = { .addr[15] = 1,};
 #endif
+    printk("redir1 %d", proxy_port);
 
 	/**
 	 * For reply traffic to egress proxy for a local endpoint, we skip the
@@ -315,8 +316,10 @@ ctx_redirect_to_proxy_first(struct __ctx_buff *ctx, __be16 proxy_port)
 	 * have a macro for this so the logic applies unconditionally here.
 	 * See ct_state.proxy_redirect usage in bpf_lxc.c for more info.
 	 */
-	if (!proxy_port)
+	if (!proxy_port) {
+        printk("redir1.5 goto mark %d", proxy_port);
 		goto mark;
+    }
 
 	if (!validate_ethertype(ctx, &proto))
 		return DROP_UNSUPPORTED_L2;
@@ -339,9 +342,11 @@ ctx_redirect_to_proxy_first(struct __ctx_buff *ctx, __be16 proxy_port)
 		struct ipv4_ct_tuple tuple;
 
 		ret = extract_tuple4(ctx, &tuple);
+        printk("redir2 %d", ret);
 		if (ret < 0)
 			return ret;
 
+		printk("redir %pI4:%d", &ipv4_localhost, proxy_port);
 		ret = ctx_redirect_to_proxy_ingress4(ctx, &tuple, proxy_port, &ipv4_localhost);
 		break;
 	}
@@ -352,11 +357,13 @@ ctx_redirect_to_proxy_first(struct __ctx_buff *ctx, __be16 proxy_port)
 #endif /* ENABLE_TPROXY */
 
 mark: __maybe_unused
+    printk("redir3");
 	cilium_dbg(ctx, DBG_CAPTURE_PROXY_POST, proxy_port, 0);
 	ctx->mark = MARK_MAGIC_TO_PROXY | (proxy_port << 16);
 	ctx_change_type(ctx, PACKET_HOST);
 
 out: __maybe_unused
+    printk("redir4");
 	return ret;
 }
 

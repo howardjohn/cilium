@@ -1168,7 +1168,14 @@ out:
 		return ret;
 	}
 #endif
-
+//    printk("hbone hit %d", HBONE_IFINDEX);
+//    ret = ctx_redirect(ctx, HBONE_IFINDEX, 0);
+//    printk("hbone ret %d", ret);
+//	if (ret == CTX_ACT_REDIRECT)
+//		return ret;
+//	else if (IS_ERR(ret))
+//		return send_drop_notify_error(ctx, 0, ret, CTX_ACT_DROP,
+//					      METRIC_EGRESS);
 #ifdef ENABLE_WIREGUARD
 	/* Redirect the packet to the WireGuard tunnel device for encryption
 	 * if needed.

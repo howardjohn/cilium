@@ -4,6 +4,7 @@
 package datapath
 
 import (
+	"github.com/cilium/cilium/pkg/hbone"
 	"log"
 	"path/filepath"
 
@@ -28,6 +29,7 @@ var Cell = cell.Module(
 
 	cell.Provide(
 		newWireguardAgent,
+		newHboneAgent,
 		newDatapath,
 	),
 
@@ -62,6 +64,24 @@ func newWireguardAgent(lc hive.Lifecycle) *wg.Agent {
 		link.DeleteByName(wgTypes.IfaceName)
 	}
 	return wgAgent
+}
+
+func newHboneAgent(lc hive.Lifecycle) *hbone.Agent {
+	var agent *hbone.Agent
+	var err error
+	agent, err = hbone.NewAgent()
+	if err != nil {
+		log.Fatalf("failed to initialize wireguard: %s", err)
+	}
+
+	lc.Append(hive.Hook{
+		OnStop: func(hive.HookContext) error {
+			log.Printf("stopping hbone!")
+			agent.Close()
+			return nil
+		},
+	})
+	return agent
 }
 
 func newDatapath(lc hive.Lifecycle, wgAgent *wg.Agent) types.Datapath {
