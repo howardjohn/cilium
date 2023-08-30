@@ -105,8 +105,10 @@ wg_maybe_redirect_to_encrypt(struct __ctx_buff *ctx)
 	/* Redirect to the WireGuard tunnel device if the encryption is
 	 * required.
 	 */
-	if (dst && dst->key)
-		return ctx_redirect(ctx, WG_IFINDEX, 0);
+	if (dst && dst->key) {
+	    printk("REDIRECT to %d", HBONE_IFINDEX);
+		return ctx_redirect(ctx, HBONE_IFINDEX, 0);
+    }
 
 out:
 	return CTX_ACT_OK;

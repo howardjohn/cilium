@@ -317,6 +317,11 @@ func (h *HeaderfileWriter) WriteNodeConfig(w io.Writer, cfg *datapath.LocalNodeC
 			cDefinesMap["ENABLE_NODE_ENCRYPTION"] = "1"
 		}
 	}
+	ifindex, err := link.GetIfIndex("hbone-in")
+	if err != nil {
+		return err
+	}
+	cDefinesMap["HBONE_IFINDEX"] = fmt.Sprintf("%d", ifindex)
 
 	if option.Config.EnableL2Announcements {
 		cDefinesMap["ENABLE_L2_ANNOUNCEMENTS"] = "1"
