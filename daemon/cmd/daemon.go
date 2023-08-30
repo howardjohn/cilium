@@ -889,7 +889,7 @@ func newDaemon(ctx context.Context, cleaner *daemonCleanup, params *daemonParams
 	log.Infof("howardjohn: starting")
 	if params.HBONEAgent != nil {
 		log.Infof("howardjohn: starting HBONE agent")
-		if err := params.HBONEAgent.Init(d.ipcache, d.mtuConfig); err != nil {
+		if err := params.HBONEAgent.Init(d.ipcache, d.endpointManager); err != nil {
 			log.WithError(err).Error("failed to initialize hbone agent")
 			return nil, nil, fmt.Errorf("failed to initialize hbone agent: %w", err)
 		}
