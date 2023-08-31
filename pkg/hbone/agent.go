@@ -44,7 +44,8 @@ func NewAgent() (*Agent, error) {
 	config := water.Config{
 		DeviceType: water.TUN,
 	}
-	config.Name = "tunhbone-in"
+	//config.Name = "tunhbone-in" // rename to hbone-in to make things work, and delete veth part velow
+	config.Name = "hbone-in" // rename to hbone-in to make things work, and delete veth part velow
 
 	ifce, err := water.New(config)
 	if err != nil {
@@ -56,17 +57,18 @@ func NewAgent() (*Agent, error) {
 	if err := connector.DisableRpFilter(ifce.Name()); err != nil {
 		return nil, fmt.Errorf("failed to disable RP filter: %v", err)
 	}
-	if err := exec.Command("sh", "-c", `
-ip link add hbone-in type veth peer name hbone-out
-ip addr add 192.168.42.1/32 dev hbone-in
-ip addr add 192.168.42.2/32 dev hbone-out 
-ip link set up hbone-in
-ip link set up hbone-out
-sysctl -2 net.ipv4.conf.hbone-in.rp_filter=0
-sysctl -w net.ipv4.conf.hbone-out.rp_filter=0
-`).Run(); err != nil {
-		return nil, fmt.Errorf("failed to up veth: %v", err)
-	}
+	// For TCP
+	//	if err := exec.Command("sh", "-c", `
+	//ip link add hbone-in type veth peer name hbone-out
+	//ip addr add 192.168.42.1/32 dev hbone-in
+	//ip addr add 192.168.42.2/32 dev hbone-out
+	//ip link set up hbone-in
+	//ip link set up hbone-out
+	//sysctl -2 net.ipv4.conf.hbone-in.rp_filter=0
+	//sysctl -w net.ipv4.conf.hbone-out.rp_filter=0
+	//`).Run(); err != nil {
+	//		return nil, fmt.Errorf("failed to up veth: %v", err)
+	//	}
 	log.Infof("howardjohn: creating hbone agent")
 	return &Agent{
 		tunIn:      ifce,

@@ -68,6 +68,17 @@ static __always_inline int ipv4_l3(struct __ctx_buff *ctx, int l3_off,
 	return CTX_ACT_OK;
 }
 
+static __always_inline int ipv4_l3_nottl(struct __ctx_buff *ctx,
+				   const __u8 *smac, const __u8 *dmac)
+{
+	if (smac && eth_store_saddr(ctx, smac, 0) < 0)
+		return DROP_WRITE_ERROR;
+	if (dmac && eth_store_daddr(ctx, dmac, 0) < 0)
+		return DROP_WRITE_ERROR;
+
+	return CTX_ACT_OK;
+}
+
 #ifndef SKIP_POLICY_MAP
 static __always_inline int
 l3_local_delivery(struct __ctx_buff *ctx, __u32 seclabel,

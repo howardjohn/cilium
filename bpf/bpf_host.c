@@ -1491,8 +1491,7 @@ out:
 	 * the packet back to the "to-netdev" section for the SNAT instead of
 	 * returning TC_ACT_REDIRECT.
 	 */
-	 printk("host");
-	ret = wg_maybe_redirect_to_encrypt_nop(ctx);
+	ret = wg_maybe_redirect_to_encrypt(ctx);
 	if (ret == CTX_ACT_REDIRECT)
 		return ret;
 	else if (IS_ERR(ret))
