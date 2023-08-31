@@ -6,7 +6,6 @@ import (
 	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
 	"github.com/cilium/cilium/pkg/datapath/connector"
 	"github.com/cilium/cilium/pkg/endpointmanager"
-	"github.com/cilium/cilium/pkg/ip"
 	ippkg "github.com/cilium/cilium/pkg/ip"
 	"github.com/cilium/cilium/pkg/ipcache"
 	"github.com/cilium/cilium/pkg/lock"
@@ -147,7 +146,8 @@ func (a *Agent) Init(ipcache *ipcache.IPCache, epmanager endpointmanager.Endpoin
 	return nil
 }
 
-func (a *Agent) OnIPIdentityCacheChange(modType ipcache.CacheModification, cidrCluster cmtypes.PrefixCluster, oldHostIP, newHostIP net.IP, oldID *ipcache.Identity, newID ipcache.Identity, encryptKey uint8, nodeID uint16, k8sMeta *ipcache.K8sMetadata) {
+func (a *Agent) OnIPIdentityCacheChange(modType ipcache.CacheModification, cidrCluster cmtypes.PrefixCluster, oldHostIP, newHostIP net.IP,
+	oldID *ipcache.Identity, newID ipcache.Identity, encryptKey uint8, k8sMeta *ipcache.K8sMetadata) {
 	log.Infof("IP cache changed")
 }
 
@@ -161,7 +161,7 @@ func (a *Agent) EndpointFromIP(connIP net.IP) EndpointInfo {
 	res.NodeIP = a.hostIPForConnIP(connIP)
 	addr, ok := ippkg.AddrFromIP(connIP)
 	if ok {
-		lbls := a.ipCache.GetIDMetadataByIP(addr)
+		lbls := a.ipCache.GetMetadataLabelsByIP(addr)
 		for k, v := range lbls {
 			if k == "k8s:io.cilium.k8s.policy.serviceaccount" {
 				res.ServiceAccount = v.Value
@@ -171,25 +171,12 @@ func (a *Agent) EndpointFromIP(connIP net.IP) EndpointInfo {
 			res.PodName = meta.PodName
 			res.Namespace = meta.Namespace
 		}
-		//if ep := a.epManager.LookupIP(addr); ep != nil {
-		//	res.Namespace = ep.K8sNamespace
-		//	res.PodName = ep.K8sPodName
-		//	for _, lbl := range ep.GetLabels() {
-		//		k, v, ok := strings.Cut(lbl, "=")
-		//		if !ok {
-		//			continue
-		//		}
-		//		if k == "k8s:io.cilium.k8s.policy.serviceaccount" {
-		//			res.ServiceAccount = v
-		//		}
-		//	}
-		//}
 	}
 	return res
 }
 
 func (a *Agent) hostIPForConnIP(connIP net.IP) net.IP {
-	hostIP := a.ipCache.GetHostIP(connIP.String())
+	hostIP, _ := a.ipCache.GetHostIPCache(connIP.String())
 	if hostIP != nil {
 		return hostIP
 	}
@@ -197,11 +184,11 @@ func (a *Agent) hostIPForConnIP(connIP net.IP) net.IP {
 	// Checking for Cilium's internal IP (cilium_host).
 	// This might be the case when checking ingress auth after egress L7 policies are applied and therefore traffic
 	// gets rerouted via Cilium's envoy proxy.
-	if ip.IsIPv4(connIP) {
-		return a.ipCache.GetHostIP(fmt.Sprintf("%s/32", connIP))
-	} else if ip.IsIPv6(connIP) {
-		return a.ipCache.GetHostIP(fmt.Sprintf("%s/128", connIP))
-	}
+	//if ip.IsIPv4(connIP) {
+	//	return a.ipCache.GetHostIP(fmt.Sprintf("%s/32", connIP))
+	//} else if ip.IsIPv6(connIP) {
+	//	return a.ipCache.GetHostIP(fmt.Sprintf("%s/128", connIP))
+	//}
 
 	return nil
 }
