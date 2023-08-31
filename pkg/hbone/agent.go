@@ -45,7 +45,7 @@ func NewAgent() (*Agent, error) {
 	config := water.Config{
 		DeviceType: water.TUN,
 	}
-	config.Name = "hbone-in"
+	config.Name = "tunhbone-in"
 
 	ifce, err := water.New(config)
 	if err != nil {
@@ -56,6 +56,17 @@ func NewAgent() (*Agent, error) {
 	}
 	if err := connector.DisableRpFilter(ifce.Name()); err != nil {
 		return nil, fmt.Errorf("failed to disable RP filter: %v", err)
+	}
+	if err := exec.Command("sh", "-c", `
+ip link add hbone-in type veth peer name hbone-out
+ip addr add 192.168.42.1/32 dev hbone-in
+ip addr add 192.168.42.2/32 dev hbone-out 
+ip link set up hbone-in
+ip link set up hbone-out
+sysctl -2 net.ipv4.conf.hbone-in.rp_filter=0
+sysctl -w net.ipv4.conf.hbone-out.rp_filter=0
+`).Run(); err != nil {
+		return nil, fmt.Errorf("failed to up veth: %v", err)
 	}
 	log.Infof("howardjohn: creating hbone agent")
 	return &Agent{
@@ -89,6 +100,19 @@ func (a *Agent) Init(ipcache *ipcache.IPCache, epmanager endpointmanager.Endpoin
 	}()
 	go a.SetupServer()
 	client := SetupClient()
+	go func() {
+		l, err := net.Listen("tcp", "0.0.0.0:15008")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for {
+			conn, err := l.Accept()
+			log.Infof("hbone accept %v %v", conn, err)
+			if err != nil {
+				break
+			}
+		}
+	}()
 	go func() {
 		packet := make([]byte, 2000)
 		for {

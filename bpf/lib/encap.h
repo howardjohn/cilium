@@ -62,6 +62,7 @@ __encap_and_redirect_with_nodeid(struct __ctx_buff *ctx, __u32 src_ip __maybe_un
 	 * compatible with < the v1.13 behavior in which the pod2pod bypassed
 	 * VXLAN/Geneve encapsulation when the WG feature was on.
 	 */
+	printk("encap");
 	ret = wg_maybe_redirect_to_encrypt(ctx);
 	if (IS_ERR(ret) || ret == CTX_ACT_REDIRECT)
 		return ret;

@@ -1491,7 +1491,8 @@ out:
 	 * the packet back to the "to-netdev" section for the SNAT instead of
 	 * returning TC_ACT_REDIRECT.
 	 */
-	ret = wg_maybe_redirect_to_encrypt(ctx);
+	 printk("host");
+	ret = wg_maybe_redirect_to_encrypt_nop(ctx);
 	if (ret == CTX_ACT_REDIRECT)
 		return ret;
 	else if (IS_ERR(ret))
@@ -1563,6 +1564,7 @@ int cil_to_host(struct __ctx_buff *ctx)
 	bool traced = false;
 	__u32 src_id = 0;
 	__s8 ext_err = 0;
+	printk("to host magic=%d,mark=%d", magic, ctx->mark);
 
 	if ((magic & 0xFFFF) == MARK_MAGIC_TO_PROXY) {
 		/* Upper 16 bits may carry proxy port number */
