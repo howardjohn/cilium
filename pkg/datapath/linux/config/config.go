@@ -22,6 +22,7 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/cilium/cilium/pkg/bpf"
+	"github.com/cilium/cilium/pkg/maps/localredirect"
 	"github.com/cilium/cilium/pkg/byteorder"
 	"github.com/cilium/cilium/pkg/cidr"
 	"github.com/cilium/cilium/pkg/datapath/link"
@@ -615,6 +616,9 @@ func (h *HeaderfileWriter) WriteNodeConfig(w io.Writer, cfg *datapath.LocalNodeC
 		cDefinesMap["THROTTLE_MAP_SIZE"] = fmt.Sprintf("%d", bwmap.MapSize)
 	}
 
+	cDefinesMap["LOCAL_REDIRECT_MAP"] = localredirect.MapName
+	cDefinesMap["LOCAL_REDIRECT_MAP_SIZE"] = fmt.Sprintf("%d", localredirect.MapSize)
+
 	if option.Config.EnableHostFirewall {
 		cDefinesMap["ENABLE_HOST_FIREWALL"] = "1"
 	}
@@ -1071,6 +1075,7 @@ func (h *HeaderfileWriter) writeStaticData(fw io.Writer, e datapath.EndpointConf
 
 // WriteEndpointConfig writes the BPF configuration for the endpoint to a writer.
 func (h *HeaderfileWriter) WriteEndpointConfig(w io.Writer, e datapath.EndpointConfiguration) error {
+	//log.WithField("configuration", e).Info("About to write endpoint config")
 	fw := bufio.NewWriter(w)
 
 	writeIncludes(w)

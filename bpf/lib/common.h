@@ -348,6 +348,14 @@ struct edt_info {
 	__u64		pad[4];
 };
 
+struct local_redirect_key {
+	__u64	id;
+};
+struct local_redirect_info {
+	__u16	ifindex;
+	__u8	ifmac[6];
+};
+
 struct remote_endpoint_info {
 	__u32		sec_identity;
 	__u32		tunnel_endpoint;
@@ -560,6 +568,7 @@ enum {
 
 /* Return value to indicate that proxy redirection is required */
 #define POLICY_ACT_PROXY_REDIRECT (1 << 16)
+#define POLICY_ACT_ZTUNNEL_REDIRECT (1 << 15)
 
 /* Cilium error codes, must NOT overlap with TC return codes.
  * These also serve as drop reasons for metrics,
