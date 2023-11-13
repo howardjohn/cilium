@@ -22,7 +22,6 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/cilium/cilium/pkg/bpf"
-	"github.com/cilium/cilium/pkg/maps/localredirect"
 	"github.com/cilium/cilium/pkg/byteorder"
 	"github.com/cilium/cilium/pkg/cidr"
 	"github.com/cilium/cilium/pkg/datapath/link"
@@ -47,6 +46,7 @@ import (
 	"github.com/cilium/cilium/pkg/maps/ipmasq"
 	"github.com/cilium/cilium/pkg/maps/l2respondermap"
 	"github.com/cilium/cilium/pkg/maps/lbmap"
+	"github.com/cilium/cilium/pkg/maps/localredirect"
 	"github.com/cilium/cilium/pkg/maps/lxcmap"
 	"github.com/cilium/cilium/pkg/maps/metricsmap"
 	"github.com/cilium/cilium/pkg/maps/nat"
@@ -318,11 +318,15 @@ func (h *HeaderfileWriter) WriteNodeConfig(w io.Writer, cfg *datapath.LocalNodeC
 			cDefinesMap["ENABLE_NODE_ENCRYPTION"] = "1"
 		}
 	}
-	ifindex, err := link.GetIfIndex("hbone-in")
-	if err != nil {
-		return err
+	if option.Config.EnableMutualTLS {
+		cDefinesMap["ENABLE_MTLS"] = "1"
+		ifindex, err := link.GetIfIndex("hbone-in")
+		if err != nil {
+			log.Warnf("hbone: %v", err)
+		//	return err
+		}
+		cDefinesMap["HBONE_IFINDEX"] = fmt.Sprintf("%d", ifindex)
 	}
-	cDefinesMap["HBONE_IFINDEX"] = fmt.Sprintf("%d", ifindex)
 
 	if option.Config.EnableL2Announcements {
 		cDefinesMap["ENABLE_L2_ANNOUNCEMENTS"] = "1"
