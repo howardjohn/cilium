@@ -179,7 +179,7 @@ func ParseService(svc *slim_corev1.Service, nodeAddressing types.NodeAddressing)
 
 	svcInfo := NewService(clusterIPs, svc.Spec.ExternalIPs, loadBalancerIPs,
 		lbSrcRanges, headless, extTrafficPolicy, intTrafficPolicy,
-		uint16(svc.Spec.HealthCheckNodePort), svc.Labels, svc.Spec.Selector,
+		uint16(svc.Spec.HealthCheckNodePort), svc.Labels, svc.Annotations, svc.Spec.Selector,
 		svc.GetNamespace(), svcType)
 
 	svcInfo.IncludeExternal = getAnnotationIncludeExternal(svc)
@@ -367,6 +367,7 @@ type Service struct {
 	LoadBalancerSourceRanges map[string]*cidr.CIDR
 
 	Labels   map[string]string
+	Annotations   map[string]string
 	Selector map[string]string
 
 	// SessionAffinity denotes whether service has the clientIP session affinity
@@ -475,7 +476,7 @@ func parseIPs(externalIPs []string) map[string]net.IP {
 // NewService returns a new Service with the Ports map initialized.
 func NewService(ips []net.IP, externalIPs, loadBalancerIPs, loadBalancerSourceRanges []string,
 	headless bool, extTrafficPolicy, intTrafficPolicy loadbalancer.SVCTrafficPolicy,
-	healthCheckNodePort uint16, labels, selector map[string]string,
+	healthCheckNodePort uint16, labels, annotations, selector map[string]string,
 	namespace string, svcType loadbalancer.SVCType) *Service {
 
 	var (
@@ -524,6 +525,7 @@ func NewService(ips []net.IP, externalIPs, loadBalancerIPs, loadBalancerSourceRa
 		LoadBalancerSourceRanges: loadBalancerSourceCIDRs,
 
 		Labels:   labels,
+		Annotations: annotations,
 		Selector: selector,
 		Type:     svcType,
 	}

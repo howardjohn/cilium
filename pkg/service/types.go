@@ -74,4 +74,5 @@ type ServiceManager interface {
 
 	// UpsertService inserts or updates the given service.
 	UpsertService(*lb.SVC) (bool, lb.ID, error)
+	UpsertWaypoint(waypoint *lb.Waypoint) (error)
 }

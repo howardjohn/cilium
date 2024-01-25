@@ -1045,6 +1045,10 @@ struct lb4_key {
 	__u8 pad[2];
 };
 
+struct lb4_waypoint {
+    __be32 address;
+};
+
 struct lb4_service {
 	union {
 		__u32 backend_id;	/* Backend ID in lb4_backends */

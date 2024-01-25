@@ -6,6 +6,7 @@ package loadbalancer
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"sort"
 	"strconv"
 	"strings"
@@ -383,6 +384,11 @@ type Backend struct {
 
 func (b *Backend) String() string {
 	return b.L3n4Addr.String()
+}
+
+type Waypoint struct {
+	Service *SVC
+	Overrides []netip.Addr
 }
 
 // SVC is a structure for storing service details.

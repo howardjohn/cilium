@@ -30,6 +30,8 @@ const (
 
 	// Service4MapV2Name is the name of the IPv4 LB Services v2 BPF map.
 	Service4MapV2Name = "cilium_lb4_services_v2"
+	// Waypoint4MapName is the name of the IPv4 Waypoint BPF map
+	Waypoint4MapName = "cilium_lb4_waypoints"
 	// Backend4MapName is the name of the IPv4 LB backends BPF map.
 	Backend4MapName = "cilium_lb4_backends"
 	// Backend4MapV2Name is the name of the IPv4 LB backends v2 BPF map.
@@ -49,6 +51,7 @@ var (
 
 	// Service4MapV2 is the IPv4 LB Services v2 BPF map.
 	Service4MapV2 *bpf.Map
+	Waypoint4Map *bpf.Map
 	// Backend4Map is the IPv4 LB backends BPF map.
 	Backend4Map *bpf.Map
 	// Backend4MapV2 is the IPv4 LB backends v2 BPF map.
@@ -78,6 +81,14 @@ func initSVC(params InitParams) {
 			0,
 		).WithCache().WithPressureMetric().
 			WithEvents(option.Config.GetEventBufferConfig(Service4MapV2Name))
+		Waypoint4Map = bpf.NewMap(Waypoint4MapName,
+			ebpf.Hash,
+			&Waypoint4Key{},
+			&Waypoint4Value{},
+			ServiceMapMaxEntries,
+			0,
+		).WithCache().WithPressureMetric().
+			WithEvents(option.Config.GetEventBufferConfig(Waypoint4MapName))
 		Backend4Map = bpf.NewMap(Backend4MapName,
 			ebpf.Hash,
 			&Backend4Key{},
@@ -287,6 +298,85 @@ func (k *Service4Key) ToHost() ServiceKey {
 	h := *k
 	h.Port = byteorder.NetworkToHost16(h.Port)
 	return &h
+}
+
+
+// Waypoint4Key must match 'struct lb4_key' in "bpf/lib/common.h".
+type Waypoint4Key struct {
+	Address     types.IPv4 `align:"address"`
+	Port        uint16     `align:"dport"`
+	BackendSlot uint16     `align:"backend_slot"`
+	Proto       uint8      `align:"proto"`
+	Scope       uint8      `align:"scope"`
+	Pad         pad2uint8  `align:"pad"`
+}
+
+func NewWaypoint4Key(ip net.IP, port uint16, proto u8proto.U8proto, scope uint8, slot uint16) *Waypoint4Key {
+	key := Waypoint4Key{
+		Port:        port,
+		Proto:       uint8(proto),
+		Scope:       scope,
+		BackendSlot: slot,
+	}
+
+	copy(key.Address[:], ip.To4())
+
+	return &key
+}
+
+func (k *Waypoint4Key) String() string {
+	kHost := k.ToHost().(*Waypoint4Key)
+	addr := net.JoinHostPort(kHost.Address.String(), fmt.Sprintf("%d", kHost.Port))
+	if kHost.Scope == loadbalancer.ScopeInternal {
+		addr += "/i"
+	}
+	return addr
+}
+
+func (k *Waypoint4Key) New() bpf.MapKey { return &Waypoint4Key{} }
+
+func (k *Waypoint4Key) IsIPv6() bool            { return false }
+func (k *Waypoint4Key) IsSurrogate() bool       { return k.GetAddress().IsUnspecified() }
+func (k *Waypoint4Key) Map() *bpf.Map           { return Waypoint4Map }
+func (k *Waypoint4Key) SetBackendSlot(slot int) { k.BackendSlot = uint16(slot) }
+func (k *Waypoint4Key) GetBackendSlot() int     { return int(k.BackendSlot) }
+func (k *Waypoint4Key) SetScope(scope uint8)    { k.Scope = scope }
+func (k *Waypoint4Key) GetScope() uint8         { return k.Scope }
+func (k *Waypoint4Key) GetAddress() net.IP      { return k.Address.IP() }
+func (k *Waypoint4Key) GetPort() uint16         { return k.Port }
+func (k *Waypoint4Key) MapDelete() error        { return k.Map().Delete(k.ToNetwork()) }
+
+func (k *Waypoint4Key) RevNatValue() RevNatValue {
+	return &RevNat4Value{
+		Address: k.Address,
+		Port:    k.Port,
+	}
+}
+
+func (k *Waypoint4Key) ToNetwork() ServiceKey {
+	n := *k
+	n.Port = byteorder.HostToNetwork16(n.Port)
+	return &n
+}
+
+// ToHost converts Waypoint4Key to host byte order.
+func (k *Waypoint4Key) ToHost() ServiceKey {
+	h := *k
+	h.Port = byteorder.NetworkToHost16(h.Port)
+	return &h
+}
+
+// Service4Value must match 'struct lb4_service' in "bpf/lib/common.h".
+type Waypoint4Value struct {
+	Address     types.IPv4 `align:"address"`
+}
+
+func (w *Waypoint4Value) String() string {
+	return w.Address.String()
+}
+
+func (w *Waypoint4Value) New() bpf.MapValue {
+	return &Waypoint4Value{}
 }
 
 // Service4Value must match 'struct lb4_service' in "bpf/lib/common.h".

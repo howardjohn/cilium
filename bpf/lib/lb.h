@@ -116,6 +116,15 @@ struct {
 
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
+	__type(key, struct lb4_key);
+	__type(value, struct lb4_waypoint);
+	__uint(pinning, LIBBPF_PIN_BY_NAME);
+	__uint(max_entries, CILIUM_LB_SERVICE_MAP_MAX_ENTRIES);
+	__uint(map_flags, CONDITIONAL_PREALLOC);
+} LB4_WAYPOINT_MAP __section_maps_btf;
+
+struct {
+	__uint(type, BPF_MAP_TYPE_HASH);
 	__type(key, __u32);
 	__type(value, struct lb4_backend);
 	__uint(pinning, LIBBPF_PIN_BY_NAME);
@@ -1248,8 +1257,30 @@ struct lb4_service *lb4_lookup_service(struct lb4_key *key,
 				  const bool scope_switch, const bool check_svc_backends)
 {
 	struct lb4_service *svc;
+	struct lb4_waypoint *waypoint;
 
 	key->scope = LB_LOOKUP_SCOPE_EXT;
+    // translate from with [int(''.join(x), 2) for x in chunks(list(bin(167796746)[2:].zfill(32)), 8)]
+    // to: int(''.join(bin(x)[2:].zfill(8) for x in [10,96,89,226][::-1]), 2)
+    //     [hex(int(x)) for x in socket.inet_ntoa(struct.pack('>L', 3797508106)).split('.')[::-1]]
+    printk("key %pI4 %d", &key->address, key->dport);
+    printk("addr %08x %04x", key->address, key->dport);
+    printk("slot %04x %02x %02x", key->backend_slot, key->proto, key->scope);
+    printk("1: %x %x",((char*)key)[0], ((char*)key)[1]);
+    printk("2: %x %x",((char*)key)[2], ((char*)key)[3]);
+    printk("3: %x %x",((char*)key)[4], ((char*)key)[5]);
+    printk("4: %x %x",((char*)key)[6], ((char*)key)[7]);
+
+    waypoint = map_lookup_elem(&LB4_WAYPOINT_MAP, key);
+    printk("response %p", waypoint);
+    if (waypoint) {
+        key->address = waypoint->address;
+        printk("OVERRIDE! %pI4", &key->address);
+    }
+//    if (key->address == 3797508106) {
+//        key->address = 1243373578;
+//        printk("OVERRIDE! %pI4", &key->address);
+//    }
 	key->backend_slot = 0;
 	svc = map_lookup_elem(&LB4_SERVICES_MAP_V2, key);
 	if (svc) {

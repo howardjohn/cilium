@@ -574,6 +574,7 @@ var (
 
 		// ip4
 		"cilium_lb4_services_v2":    "enabled,128,0",
+		"cilium_lb4_waypoints":      "enabled,128,0",
 		"cilium_lb4_backends_v2":    "enabled,128,0",
 		"cilium_lb4_reverse_nat":    "enabled,128,0",
 		"cilium_lb4_backends_v3":    "enabled,128,0",

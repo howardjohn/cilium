@@ -5,6 +5,7 @@ package watchers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/netip"
@@ -159,6 +160,7 @@ type svcManager interface {
 	DeleteService(frontend loadbalancer.L3n4Addr) (bool, error)
 	GetDeepCopyServiceByFrontend(frontend loadbalancer.L3n4Addr) (*loadbalancer.SVC, bool)
 	UpsertService(*loadbalancer.SVC) (bool, loadbalancer.ID, error)
+	UpsertWaypoint(waypoint *loadbalancer.Waypoint) (error)
 	RegisterL7LBServiceRedirect(serviceName loadbalancer.ServiceName, resourceName service.L7LBResourceName, proxyPort uint16) error
 	DeregisterL7LBServiceRedirect(serviceName loadbalancer.ServiceName, resourceName service.L7LBResourceName) error
 	RegisterL7LBServiceBackendSync(serviceName loadbalancer.ServiceName, backendSyncRegistration service.BackendSyncer) error
@@ -916,6 +918,7 @@ func (k *K8sWatcher) addK8sSVCs(svcID k8s.ServiceID, oldSvc, svc *k8s.Service, e
 	svcs := datapathSVCs(svc, endpoints)
 	svcMap := hashSVCMap(svcs)
 
+
 	if oldSvc != nil {
 		// If we have oldService then we need to detect which frontends
 		// are no longer in the updated service and delete them in the datapath.
@@ -954,6 +957,20 @@ func (k *K8sWatcher) addK8sSVCs(svcID k8s.ServiceID, oldSvc, svc *k8s.Service, e
 				Cluster:   svcID.Cluster,
 			},
 		}
+		if an, f := svc.Annotations["experimental.istio.io/waypoint-for"]; f {
+			arr := []string{}
+			json.Unmarshal([]byte(an), &arr)
+			wp := &loadbalancer.Waypoint{
+				Service:   p,
+			}
+			for _, r := range arr {
+				wp.Overrides = append(wp.Overrides, netip.MustParseAddr(r))
+			}
+			if err := k.svcManager.UpsertWaypoint(wp); err != nil {
+				scopedLog.WithError(err).Error("Error while inserting waypoint in LB map")
+			}
+		}
+
 		if _, _, err := k.svcManager.UpsertService(p); err != nil {
 			if errors.Is(err, service.NewErrLocalRedirectServiceExists(p.Frontend, p.Name)) {
 				scopedLog.WithError(err).Debug("Error while inserting service in LB map")
