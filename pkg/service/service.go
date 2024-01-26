@@ -642,35 +642,24 @@ func (s *Service) UpsertWaypoint(params *lb.Waypoint) error {
 	s.Lock()
 	defer s.Unlock()
 
-	waypointIP := params.Service.Frontend.L3n4Addr.AddrCluster.Addr().As4()
+	waypointIP := params.Overrides[0]
+	svc := params.Service
+	ip := svc.Frontend.L3n4Addr.AddrCluster.Addr()
+	port := svc.Frontend.L3n4Addr.L4Addr.Port
+	port2 := byteorder.HostToNetwork16(port)
 	log.WithFields(logrus.Fields{
-		"waypoint":  waypointIP,
-		"overrides": params.Overrides,
-	}).Info("Upserting waypoint entry")
-	// This is terrible
-	svcs, _ := s.lbmap.DumpServiceMaps()
-	for _, svc := range svcs {
-		ip := svc.Frontend.L3n4Addr.AddrCluster.Addr()
-		port := svc.Frontend.L3n4Addr.L4Addr.Port
-		port2 := byteorder.HostToNetwork16(port)
-		for _, candidate := range params.Overrides {
-			if candidate == ip {
-				log.WithFields(logrus.Fields{
-					"waypoint": waypointIP,
-					"ip":       ip,
-					"port":     port,
-					"port2":    port2,
-				}).Info("Upserted waypoint entry")
-				key := lbmap.NewWaypoint4Key(ip.AsSlice(), port2, u8proto.ANY, svc.Frontend.L3n4Addr.Scope, 0)
-				val := lbmap.Waypoint4Value{Address: waypointIP}
-				if err := key.Map().OpenOrCreate(); err != nil {
-					return err
-				}
-				if err := key.Map().Update(key, &val); err != nil {
-					return err
-				}
-			}
-		}
+		"waypoint": waypointIP,
+		"ip":       ip,
+		"port":     port,
+		"port2":    port2,
+	}).Info("Upserted waypoint entry")
+	key := lbmap.NewWaypoint4Key(ip.AsSlice(), port2, u8proto.ANY, svc.Frontend.L3n4Addr.Scope, 0)
+	val := lbmap.Waypoint4Value{Address: waypointIP.As4()}
+	if err := key.Map().OpenOrCreate(); err != nil {
+		return err
+	}
+	if err := key.Map().Update(key, &val); err != nil {
+		return err
 	}
 	return nil
 }

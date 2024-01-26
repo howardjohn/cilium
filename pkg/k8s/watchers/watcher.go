@@ -5,7 +5,6 @@ package watchers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net"
 	"net/netip"
@@ -957,19 +956,16 @@ func (k *K8sWatcher) addK8sSVCs(svcID k8s.ServiceID, oldSvc, svc *k8s.Service, e
 				Cluster:   svcID.Cluster,
 			},
 		}
-		if an, f := svc.Annotations["experimental.istio.io/waypoint-for"]; f {
-			arr := []string{}
-			json.Unmarshal([]byte(an), &arr)
+		if an, f := svc.Annotations["experimental.istio.io/waypoint"]; f {
 			wp := &loadbalancer.Waypoint{
-				Service:   p,
+				Service: p,
 			}
-			for _, r := range arr {
-				wp.Overrides = append(wp.Overrides, netip.MustParseAddr(r))
-			}
+			wp.Overrides = append(wp.Overrides, netip.MustParseAddr(an))
 			if err := k.svcManager.UpsertWaypoint(wp); err != nil {
 				scopedLog.WithError(err).Error("Error while inserting waypoint in LB map")
 			}
 		}
+
 
 		if _, _, err := k.svcManager.UpsertService(p); err != nil {
 			if errors.Is(err, service.NewErrLocalRedirectServiceExists(p.Frontend, p.Name)) {
